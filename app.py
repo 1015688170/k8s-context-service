@@ -14,6 +14,7 @@ app = FastAPI(title="Kubernetes Context Service", version="1.0.0")
 LOG_TAIL_LINES = int(os.getenv("LOG_TAIL_LINES", "100"))
 MAX_LOG_CHARS = int(os.getenv("MAX_LOG_CHARS", "20000"))
 MAX_EVENTS = int(os.getenv("MAX_EVENTS", "50"))
+SERVICEACCOUNT_TOKEN_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 
 _core_v1: Optional[client.CoreV1Api] = None
 _apps_v1: Optional[client.AppsV1Api] = None
@@ -33,15 +34,35 @@ def load_kubernetes_clients() -> Tuple[client.CoreV1Api, client.AppsV1Api]:
     if _core_v1 is not None and _apps_v1 is not None:
         return _core_v1, _apps_v1
 
+    loaded_incluster = False
     try:
         config.load_incluster_config()
+        loaded_incluster = True
     except config.ConfigException:
         config.load_kube_config()
 
-    _api_client = client.ApiClient()
+    configuration = client.Configuration.get_default_copy()
+    _api_client = client.ApiClient(configuration)
+    if loaded_incluster:
+        add_incluster_authorization_header(_api_client)
+
     _core_v1 = client.CoreV1Api(_api_client)
     _apps_v1 = client.AppsV1Api(_api_client)
     return _core_v1, _apps_v1
+
+
+def add_incluster_authorization_header(api_client: client.ApiClient) -> None:
+    # kubernetes==36.0.0 may load the token but produce empty auth_settings(),
+    # which makes requests reach the API server as system:anonymous. Setting the
+    # header explicitly keeps in-cluster auth reliable across client versions.
+    try:
+        with open(SERVICEACCOUNT_TOKEN_PATH, "r", encoding="utf-8") as token_file:
+            token = token_file.read().strip()
+    except OSError:
+        return
+
+    if token:
+        api_client.default_headers["Authorization"] = f"Bearer {token}"
 
 
 @app.on_event("startup")

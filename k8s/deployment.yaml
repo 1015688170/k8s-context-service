@@ -16,9 +16,11 @@ spec:
         app: k8s-context-service
     spec:
       serviceAccountName: k8s-context-reader
+      imagePullSecrets:
+        - name: aliyun-cr-secret
       containers:
         - name: k8s-context-service
-          image: k8s-context-service:v1
+          image: crpi-qkstaz97nfy5vx9q.cn-beijing.personal.cr.aliyuncs.com/docker_swp/k8s-context-service:v2
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
