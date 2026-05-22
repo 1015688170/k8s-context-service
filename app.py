@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import re
+import ast
 from typing import Any, Dict, List, Optional, Tuple
 
 from fastapi import FastAPI
@@ -313,6 +314,13 @@ def normalize_log_text(value: Any) -> str:
         text = value.decode("utf-8", errors="replace")
     else:
         text = str(value)
+        if text.startswith(("b'", 'b"')):
+            try:
+                parsed = ast.literal_eval(text)
+                if isinstance(parsed, bytes):
+                    text = parsed.decode("utf-8", errors="replace")
+            except (SyntaxError, ValueError):
+                pass
     return ANSI_ESCAPE_RE.sub("", text)
 
 
