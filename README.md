@@ -93,8 +93,10 @@ It does not grant `create`, `delete`, `patch`, or `update`.
 
 The default limits are:
 
-- `LOG_TAIL_LINES=100`
+- `PREVIOUS_LOG_TAIL_LINES=50`
+- `CURRENT_LOG_TAIL_LINES=30`
+- `LOG_TAIL_LINES`: optional compatibility override for both previous and current logs
 - `MAX_LOG_CHARS=20000`
-- `MAX_EVENTS=50`
+- `MAX_EVENTS=20`
 
 You can override these values with environment variables in the Deployment if needed.

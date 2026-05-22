@@ -6,9 +6,11 @@ metadata:
   labels:
     app: k8s-context-service
 spec:
+  type: NodePort
   selector:
     app: k8s-context-service
   ports:
     - name: http
       port: 8000
       targetPort: 8000
+      nodePort: 30080

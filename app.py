@@ -13,9 +13,15 @@ from pydantic import BaseModel, Field
 
 app = FastAPI(title="Kubernetes Context Service", version="1.0.0")
 
-LOG_TAIL_LINES = int(os.getenv("LOG_TAIL_LINES", "100"))
+DEFAULT_LOG_TAIL_LINES = os.getenv("LOG_TAIL_LINES")
+PREVIOUS_LOG_TAIL_LINES = int(
+    os.getenv("PREVIOUS_LOG_TAIL_LINES", DEFAULT_LOG_TAIL_LINES or "50")
+)
+CURRENT_LOG_TAIL_LINES = int(
+    os.getenv("CURRENT_LOG_TAIL_LINES", DEFAULT_LOG_TAIL_LINES or "30")
+)
 MAX_LOG_CHARS = int(os.getenv("MAX_LOG_CHARS", "20000"))
-MAX_EVENTS = int(os.getenv("MAX_EVENTS", "50"))
+MAX_EVENTS = int(os.getenv("MAX_EVENTS", "20"))
 SERVICEACCOUNT_TOKEN_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")
 
@@ -233,7 +239,7 @@ def get_pod_logs(
                 namespace=namespace,
                 container=container_name,
                 previous=previous,
-                tail_lines=LOG_TAIL_LINES,
+                tail_lines=PREVIOUS_LOG_TAIL_LINES if previous else CURRENT_LOG_TAIL_LINES,
                 timestamps=True,
             )
             log_text = normalize_log_text(log_text)

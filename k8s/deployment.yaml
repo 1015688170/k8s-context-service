@@ -20,7 +20,7 @@ spec:
         - name: aliyun-cr-secret
       containers:
         - name: k8s-context-service
-          image: crpi-qkstaz97nfy5vx9q.cn-beijing.personal.cr.aliyuncs.com/docker_swp/k8s-context-service:v4
+          image: crpi-qkstaz97nfy5vx9q.cn-beijing.personal.cr.aliyuncs.com/docker_swp/k8s-context-service:v5
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
