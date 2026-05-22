@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 from typing import Any, Dict, List, Optional, Tuple
 
 from fastapi import FastAPI
@@ -15,6 +16,7 @@ LOG_TAIL_LINES = int(os.getenv("LOG_TAIL_LINES", "100"))
 MAX_LOG_CHARS = int(os.getenv("MAX_LOG_CHARS", "20000"))
 MAX_EVENTS = int(os.getenv("MAX_EVENTS", "50"))
 SERVICEACCOUNT_TOKEN_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")
 
 _core_v1: Optional[client.CoreV1Api] = None
 _apps_v1: Optional[client.AppsV1Api] = None
@@ -233,6 +235,7 @@ def get_pod_logs(
                 tail_lines=LOG_TAIL_LINES,
                 timestamps=True,
             )
+            log_text = normalize_log_text(log_text)
             if log_text:
                 if container_name:
                     logs.append(f"===== container: {container_name} =====\n{log_text}")
@@ -301,6 +304,16 @@ def event_sort_value(event: client.CoreV1Event) -> float:
     if hasattr(value, "timestamp"):
         return float(value.timestamp())
     return 0.0
+
+
+def normalize_log_text(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        text = value.decode("utf-8", errors="replace")
+    else:
+        text = str(value)
+    return ANSI_ESCAPE_RE.sub("", text)
 
 
 def find_deployment_status(
